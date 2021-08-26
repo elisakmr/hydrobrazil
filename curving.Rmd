@@ -1,0 +1,72 @@
+---
+title: "Curving"
+output: html_document
+---
+
+## Directories
+
+
+```{r setup, include=FALSE}
+
+if ((Sys.info()["nodename"]) == "COP026") {
+  dir_data <- "C:/Users/arvor_d/Documents/workwork/data"
+  dir_plot <- "C:/Users/arvor_d/Documents/workwork/plot"
+} else if ((Sys.info()["nodename"]) == "MULLET-SL") {
+  dir_data <- "F:/kamir_e/$data"
+  dir_plot <- "F:/kamir_e/$plot "
+}
+
+```
+
+## Library
+
+
+```{r setup, include=FALSE}
+
+library(plyr)
+library(dplyr)
+library(foreach)
+library(iterators)
+library(parallel)
+library(doParallel)
+library(maps)
+library(nnet)
+library(ggplot2)
+library(latticeExtra)
+library(sp)
+library(rgdal)
+library(raster)
+library(ggmap)
+library(sf)
+
+
+```
+## Loading data
+
+Loading hydrographic network data (multi source data gathered by gov)
+
+```{r }
+
+# hydrobasin on MG
+hydrobasin_mg <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9","hydrobasin_mg.shp"))
+
+# hydrographic network on MG
+hydronetwork <- st_read(file.path(dir_data, "water_surface", "second.shp"))
+
+no_cores <- detectCores()
+cl <- makeCluster(no_cores) # setting up number of cores
+registerDoParallel(cl) # parallelizing on them
+
+foreach(i=1:dim(hydrobasin_mg)[1], .packages=c('sf')) %dopar%  { 
+    # cropping single rivers on watershed level
+  crop_hydrnet <- st_crop(hydronetwork,hydrobasin_mg[i,])
+  st_write(crop_hydrnet, file.path(dir_data, "processed",paste0("cropped_hydrnetw",i,".shp")))
+
+ }
+
+stopCluster(cl)
+
+
+```
+
+

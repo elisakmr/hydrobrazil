@@ -1,0 +1,151 @@
+---
+title: "Data preprocessing"
+output: html_document
+---
+## Directories
+
+# Reminder:
+#hydrobasins <- shapefile(file.path(dir_data, "hydroshed","hydrobasins_level9","hydrobasin_mg_lev9.shp"))
+#hydronetwork <- shapefile(file.path(dir_data, "water_surface", "second.shp"))
+#hydronetwork <- readOGR(dsn=file.path(dir_data, "water_surface", "second.shp"))
+
+```{r setup, include=FALSE}
+
+if ((Sys.info()["nodename"]) == "COP026") {
+  dir_data <- "C:/Users/arvor_d/Documents/workwork/data"
+  dir_plot <- "C:/Users/arvor_d/Documents/workwork/plot"
+} else if ((Sys.info()["nodename"]) == "COSTELSV6") {
+  dir_data <- "F:/kamir_e/$data"
+  dir_plot <- "F:/kamir_e/$plot "
+}
+
+```
+
+## Library
+
+```{r setup, include=FALSE}
+
+library(plyr)
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(foreach)
+library(iterators)
+library(lwgeom)
+library(parallel)
+library(doParallel)
+library(maps)
+library(nnet)
+library(ggplot2)
+library(latticeExtra)
+library(sp)
+library(rgdal)
+library(raster)
+library(stringi)
+library(ggmap)
+library(sf)
+library(stars)
+library(exactextractr)
+
+```
+
+## Stacking yearly mapbiomas raster data (1985 to 2019, 30m resolution, already at mg extent)
+
+
+```{r }
+
+biomas_mg <- raster()
+
+ # STACKING #
+
+for (i in c(1985:2019)){
+  newlayer <- raster(file.path(dir_data, "mapbiomass", paste0("mapbiomas-brazil-collection-50-matogrosso-",i,".tif")))
+  biomas_mg <- stack(biomas_mg, newlayer)
+}
+
+ # WRITING OUTPUT RASTER #
+
+writeRaster(biomas_mg, file.path(dir_data, "mapbiomass", "biomas1985_2019_mg.tif"), overwrite = TRUE)
+
+```
+
+## Cropping hydrobasin file to mato grosso extent
+
+
+```{r }
+
+# Mato Grosso border shapefile
+mg_borders <- shapefile(file.path(dir_data, "boundaries","mato grosso", "MT.shp"))
+
+# Hydroshed hydrobasins at level 9
+hydrobasins <- shapefile(file.path(dir_data, "hydroshed","hydrobasins_level9", "hybas_sa_lev09_v1c.shp"))
+
+# Cropping 
+hydrobasin_mg <- intersect(hydrobasins, mg_borders)
+
+# Writing output shapefile
+writeOGR(hydrobasin_mg, layer = "hydrobasin_mg_lev9", driver="ESRI Shapefile", dsn= file.path(dir_data, "hydroshed","hydrobasins_level9"))
+
+
+```
+
+## Cropping water surfaces on hydrobasin extents
+
+We crop and save each hydrobasin-cropped file
+
+```{r }
+
+### 1. LOADING HYDROBASINS ###
+
+hydrobasins <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9","hydrobasin_mg_lev9.shp"))
+
+
+### 2. CROPPING FILES ON HYDORBASIN EXTENTS ###
+
+  ## SIMPLE LINE STREAMS ##
+
+  # hydrographic network on MG
+  hydronetwork <- st_read(file.path(dir_data, "water_surface", "rios_simple84.shp"))
+  
+  no_cores <- detectCores()
+  cl <- makeCluster(no_cores-1) # setting up number of cores
+  registerDoParallel(cl) # parallelizing on them
+  
+  foreach(i=1:dim(hydrobasins)[1], .packages=c('sf')) %dopar%  { #
+      # cropping single rivers on watershed level
+    crop_list <- st_intersects(hydrobasins[i,],hydronetwork)
+    crop_shp <- hydronetwork[unlist(crop_list),]
+    st_write(crop_shp, file.path(dir_data, "processed",paste0("cropped_lev09hydrnetw",i-1,".shp")), delete_layer = TRUE)
+  
+   }
+  
+  stopCluster(cl)
+  
+  ## POLY LINE STREAMS ##
+  
+  # hydrographic network on MG
+  polynetwork <- st_read(file.path(dir_data, "water_surface", "rios_poly", "output_hidro_poly.shp"))
+  
+  no_cores <- detectCores()
+  cl <- makeCluster(no_cores-1) # setting up number of cores
+  registerDoParallel(cl) # parallelizing on them
+  
+  foreach(i=1:dim(hydrobasins)[1], .packages=c('sf')) %dopar%  { #
+      # cropping single rivers on watershed level
+    crop_list <- st_intersects(hydrobasins[i,],polynetwork)
+    poly_shp <- polynetwork[unlist(crop_list),]
+    st_write(poly_shp, file.path(dir_data, "processed",paste0("poly_crop9",i-1,".shp")), delete_layer = TRUE)
+  
+   }
+  
+  stopCluster(cl)
+  
+  ## WATER RESERVOIRS ##
+  ## LAKE ##
+  
+   
+```
+
+
+
+

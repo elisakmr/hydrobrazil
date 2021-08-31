@@ -123,7 +123,7 @@ hydrobasins <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9","hyd
   
   ## POLY LINE STREAMS ##
   
-  # hydrographic network on MG
+  # poly-hydrographic network on MG
   polynetwork <- st_read(file.path(dir_data, "water_surface", "rios_poly", "output_hidro_poly.shp"))
   
   no_cores <- detectCores()
@@ -141,9 +141,46 @@ hydrobasins <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9","hyd
   stopCluster(cl)
   
   ## WATER RESERVOIRS ##
-  ## LAKE ##
   
-   
+  #lake network on MG
+  lago <- st_read(file.path(dir_data, "water_surface", "lago", "input_lago_reservatorio_icv.shp"))
+  
+  no_cores <- detectCores()
+  cl <- makeCluster(no_cores-1) # setting up number of cores
+  registerDoParallel(cl) # parallelizing on them
+  
+  foreach(i=1:dim(hydrobasins)[1], .packages=c('sf')) %dopar%  { #
+      # cropping single rivers on watershed level
+    crop_list <- st_intersects(hydrobasins[i,],lago)
+    lago_shp <- lago[unlist(crop_list),]
+    st_write(lago_shp, file.path(dir_data, "processed",paste0("lago_crop9_",i-1,".shp")), delete_layer = TRUE)
+  
+   }
+  
+  stopCluster(cl)
+  
+  
+  
+  ## SOURCE ##
+  
+  # source network on MG
+  nascente <- st_read(file.path(dir_data, "water_surface", "nascentes", "nascente84.shp"))
+  
+  no_cores <- detectCores()
+  cl <- makeCluster(no_cores-1) # setting up number of cores
+  registerDoParallel(cl) # parallelizing on them
+  
+  foreach(i=1:dim(hydrobasins)[1], .packages=c('sf')) %dopar%  { #
+      # cropping single rivers on watershed level
+    crop_list <- st_intersects(hydrobasins[i,],nascente)
+    nascente_shp <- nascente[unlist(crop_list),]
+    st_write(nascente_shp, file.path(dir_data, "processed",paste0("source_crop9_",i-1,".shp")), delete_layer = TRUE)
+  
+   }
+  
+  stopCluster(cl)
+  
+  
 ```
 
 

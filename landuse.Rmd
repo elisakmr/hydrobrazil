@@ -5,7 +5,7 @@ output: html_document
 
 ## Directories
 
-```{r setup, include=FALSE}
+```{r }
 
 
 if ((Sys.info()["nodename"]) == "COP026") {
@@ -20,7 +20,7 @@ if ((Sys.info()["nodename"]) == "COP026") {
 
 ## Library
 
-```{r setup, include=FALSE}
+```{r }
 
 library(plyr)
 library(dplyr)
@@ -38,17 +38,8 @@ library(sf)
 library(stars)
 library(exactextractr)
 library(tictoc)
+library(terra)
 
-
-```
-
-
-## Parameters
-
-```{r setup, include=FALSE}
-
-cov_class <- c(3,9,11,12,15,39,20,41,36,21,22,33,31)
-annee <- c(1985:2019)
 
 ```
 
@@ -63,118 +54,23 @@ annee <- c(1985:2019)
 ### LOADING PRE PROCESSED DATA
 
 # land use from mapbiomas
+biomas85_19_mt <- rast(file.path(dir_data, "processed", "biomas1985_2019_mg.tif"))
 
-biomas85_19_mg <- stack(file.path(dir_data, "processed", "biomas1985_2019_mg.tif"))
+# hydrobasins from hydroshed on utm projection
 
-# hydrobasins from hydroshed
+hydrobasin <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9", "hydrobasin_mg_lev9.shp"))
 
-hydrobasin_mg <- st_read(file.path(dir_data,"hydrobasin_mg.shp"))
+## EXTRACTING LAND USE FOR EACH POLYGON AND SAVING LIST OF DF
 
-## COMPUTING LAND USE PERCENTAGE
+tic()
+basin_extract(biomas85_19_mt, hydrobasin)
+toc()
 
-# new shapefile, copy of hydrobasin with additional columns: coverage and coverage fraction
-
-
-# loop on years (mapbiomas raster layers)
-for (year in annee){
-
-  y=which(year==annee)
-tictoc::tic() # start timer
-
-  # loop on hydrobasin polygon
-  no_cores <- detectCores()
-  cl <- makeCluster(no_cores) # setting up number of cores
-  registerDoParallel(cl) # parallelizing on them
-  foreach(i=1:dim(hydrobasin_mg)[1], .packages=c('sf', 'exactextractr', 'dplyr')) %dopar%  { 
-    
-      lupercent_shp <- hydrobasin_mg[i,] %>% mutate(for_nat=NA, for_plant=NA, wet=NA, grass=NA, past=NA, soy=NA, sugar=NA, temp_crop=NA, per_crop=NA, agrpast=NA, non_veg=NA, water=NA, aqua=NA)
-
-    # getting raster grids contained in i polygon
-      df_lu <- as.data.frame(exact_extract(biomas85_19_mg[[y]],hydrobasin_mg[i,]))
-      # vector of raster cell land use on i polygon
-      for (j in cov_class){
-        # summing coverage fraction of class j
-        if(length(which(df_lu$value==j))>0){
-        percent_vec <- as.numeric(df_lu %>% filter(value==j) %>% summarize(sum(coverage_fraction)))
-        # polygon area
-        colonne <- which(cov_class==j)
-        poly_area <- st_area(hydrobasin_mg[i,])
-        # coverage percent: grid area*sum of j coverage fraction/polygon area
-        lupercent_shp[,colonne+15] <- (900*percent_vec/poly_area)
-        }
-      }
-      
-  st_write(lupercent_shp, file.path(dir_data, "processed",paste0("hydrobasin_landuse",year,i,".shp")))
-      
-  }
-  
-
-}
-
-tictoc::toc() # end timer
+# tic()
+# basin_extract_parallel(biomas85_19_mt[[1]], hydrobasin[1:16,])
+# toc()
 
 ```
 
 
-## Merging all basin-level files into yearly ones
-
-
-
-```{r }
-
-
-for (year in annee){
-
-  list_lu <- list()
-  for (i in 1:dim(hydrobasin_mg)[1]){
-   list_lu[[i]] <- st_read(file.path(dir_data, "processed",paste0("hydrobasin_landuse",year,i,".shp")))
-  }
-  all_lu <- do.call(rbind, list_lu)
-  
-}
-
-  st_write(all_lu, file.path(dir_data, "processed",paste0("hydrobasin_landuse_all",year,".shp")))
-
-
-
-
-
-```
-
-## Checking calculations
-
-
-```{r }
-
-year<-2019
-y=which(year==annee)
-
-hydro_all_y<-st_read(file.path(dir_data, "processed",paste0("hydrobasin_landuse_all",year,".shp")))
-biomas85_19_mg <- stack(file.path(dir_data, "processed", "biomas1985_2019_mg.tif"))
-
-max(hydro_all_y$for_nat, na.rm = TRUE)
-which(hydro_all_y$for_nat==max(hydro_all_y$for_nat, na.rm = TRUE))
-hydro_all_y$for_nat[946]
-
-# polygon 946
-df_lu <- as.data.frame(exact_extract(biomas85_19_mg[[y]],hydrobasin_mg[946,]))
-df_lu %>% filter(value==33)
-
-st_area(hydrobasin_mg[946,])#382632866 [m^2]
-hydrobasin_mg[946,]$SUB_AREA #382.6
-sum(df_lu$coverage_fraction)*900 # *cos(pi*(-13.14167)/180) #1:393462068; 2:383157640; 3:383467570; 4:
-Chydrobasin_mg[946,]
-mean(st_bbox(hydrobasin_mg[946,])[2,4])
-mean(-13.14167,-12.74167 )
-
-
-#trial<-projectRaster(biomas85_19_mg[[y]], crs="+init=EPSG:32721", method='ngb')
-#df_lu2 <- as.data.frame(exact_extract(trial,hydrobasin_mg[946,], include_xy =TRUE))
-df_lu3 <- as.data.frame(exact_extract(biomas85_19_mg[[y]],hydrobasin_mg[946,], include_area=TRUE))
-df<-df_lu3 %>% summarise(areafrac=coverage_fraction*900*cos(pi*(y)/180))
-sum(df) #383489531
-sum(df_lu$coverage_fraction)*900*cos(pi*(-13.14167)/180)
-
-
-```
 

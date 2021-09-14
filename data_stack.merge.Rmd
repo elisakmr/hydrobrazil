@@ -1,0 +1,117 @@
+---
+title: "Merging_cropping"
+output: html_document
+---
+
+```{r }
+
+if ((Sys.info()["nodename"]) == "COP026") {
+  dir_data <- "C:/Users/arvor_d/Documents/workwork/data"
+  dir_plot <- "C:/Users/arvor_d/Documents/workwork/plot"
+} else if ((Sys.info()["nodename"]) == "COSTELSV6") {
+  dir_data <- "F:/kamir_e/$data"
+  dir_plot <- "F:/kamir_e/$plot "
+}
+
+```
+
+## Library
+
+```{r }
+
+library(plyr)
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(foreach)
+library(iterators)
+library(lwgeom)
+library(parallel)
+library(doParallel)
+library(maps)
+library(nnet)
+library(ggplot2)
+library(latticeExtra)
+library(sp)
+library(rgdal)
+library(raster)
+library(stringi)
+library(ggmap)
+library(sf)
+library(stars)
+library(terra)
+
+```
+
+## ELEVATION: Merging hydrologically conditionned elevation raster
+
+
+```{r }
+
+# LOADING each separated raster
+
+topo1 <- rast(file.path(dir_data, "hydroshed", "hydrocon elevation", "s10w055_con_bil", "s10w055_con.bil"))
+topo2 <- rast(file.path(dir_data, "hydroshed", "hydrocon elevation", "s10w060_con_bil", "s10w060_con.bil"))
+topo3 <- rast(file.path(dir_data, "hydroshed", "hydrocon elevation", "s10w065_con_bil", "s10w065_con.bil"))
+topo4 <- rast(file.path(dir_data, "hydroshed", "hydrocon elevation", "s15w055_con_bil", "s15w055_con.bil"))
+topo5 <- rast(file.path(dir_data, "hydroshed", "hydrocon elevation", "s15w060_con_bil", "s15w060_con.bil"))
+topo6 <- rast(file.path(dir_data, "hydroshed", "hydrocon elevation", "s15w065_con_bil", "s15w065_con.bil"))
+topo7 <- rast(file.path(dir_data, "hydroshed", "hydrocon elevation", "s20w055_con_bil", "s20w055_con.bil"))
+topo8 <- rast(file.path(dir_data, "hydroshed", "hydrocon elevation", "s20w060_con_bil", "s20w060_con.bil"))
+topo9 <- rast(file.path(dir_data, "hydroshed", "hydrocon elevation", "s20w065_con_bil", "s20w065_con.bil"))
+
+
+ # MERGING #
+
+elevation_merge <- merge(topo1,topo2,topo3,topo4,topo5,topo6,topo7,topo8,topo9)
+
+ # WRITING OUTPUT RASTER #
+
+writeRaster(elevation_merge, file.path(dir_data, "hydroshed", "hydrocon elevation", "elevation_merge.tif"), overwrite = TRUE)
+
+```
+
+## MAPBIOMAS: Stacking yearly raster data (1985 to 2019)
+
+
+```{r }
+
+biomas_mg <- raster()
+
+ # STACKING #
+
+for (i in c(1985:2019)){
+  newlayer <- raster(file.path(dir_data, "mapbiomass", paste0("mapbiomas-brazil-collection-50-matogrosso-",i,".tif")))
+  biomas_mg <- stack(biomas_mg, newlayer)
+}
+
+ # WRITING OUTPUT RASTER #
+
+writeRaster(biomas_mg, file.path(dir_data, "mapbiomass", "biomas1985_2019_mg.tif"), overwrite = TRUE)
+
+```
+
+## PANGAEA: Stacking yearly files (2000-2018)
+
+```{r }
+
+panga_braz <- rast(file.path(dir_data, "pangaea", paste0("AMZ_",2000,"_9_", 2001,"_8",".tif")))
+
+# Mato Grosso border shapefile
+mg_borders <- st_read(file.path(dir_data, "boundaries","mato grosso", "mt84.shp"))
+
+# Hydroshed hydrobasins at level 9
+for (i in c(2001:2017)){
+  newlayer <- rast(file.path(dir_data, "pangaea", paste0("AMZ_",i,"_9_", i+1,"_8",".tif")))
+  panga_braz <- c(panga_braz, newlayer)
+}
+
+# Reprojecting on WGS84
+crs <- "+proj=longlat +datum=WGS84"
+panga_braz84 <- project(panga_braz, crs)
+
+writeRaster(panga_braz84, file = file.path(dir_data, "pangaea", "panga_braz84.tif"))
+
+
+```
+

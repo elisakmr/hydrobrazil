@@ -9,7 +9,7 @@ output: html_document
 #hydronetwork <- shapefile(file.path(dir_data, "water_surface", "second.shp"))
 #hydronetwork <- readOGR(dsn=file.path(dir_data, "water_surface", "second.shp"))
 
-```{r setup, include=FALSE}
+```{r }
 
 if ((Sys.info()["nodename"]) == "COP026") {
   dir_data <- "C:/Users/arvor_d/Documents/workwork/data"
@@ -45,37 +45,18 @@ library(stringi)
 library(ggmap)
 library(sf)
 library(stars)
-library(exactextractr)
+library(terra)
 
 ```
 
-## Stacking yearly mapbiomas raster data (1985 to 2019, 30m resolution, already at mg extent)
 
-
-```{r }
-
-biomas_mg <- raster()
-
- # STACKING #
-
-for (i in c(1985:2019)){
-  newlayer <- raster(file.path(dir_data, "mapbiomass", paste0("mapbiomas-brazil-collection-50-matogrosso-",i,".tif")))
-  biomas_mg <- stack(biomas_mg, newlayer)
-}
-
- # WRITING OUTPUT RASTER #
-
-writeRaster(biomas_mg, file.path(dir_data, "mapbiomass", "biomas1985_2019_mg.tif"), overwrite = TRUE)
-
-```
-
-## Cropping hydrobasin file to mato grosso extent
+## HYDROBASINS: Cropping SHP to mato grosso extent
 
 
 ```{r }
 
 # Mato Grosso border shapefile
-mg_borders <- shapefile(file.path(dir_data, "boundaries","mato grosso", "MT.shp"))
+mg_borders <- shapefile(file.path(dir_data, "boundaries","mato grosso", "mt84.shp"))
 
 # Hydroshed hydrobasins at level 9
 hydrobasins <- shapefile(file.path(dir_data, "hydroshed","hydrobasins_level9", "hybas_sa_lev09_v1c.shp"))
@@ -84,12 +65,81 @@ hydrobasins <- shapefile(file.path(dir_data, "hydroshed","hydrobasins_level9", "
 hydrobasin_mg <- intersect(hydrobasins, mg_borders)
 
 # Writing output shapefile
-writeOGR(hydrobasin_mg, layer = "hydrobasin_mg_lev9", driver="ESRI Shapefile", dsn= file.path(dir_data, "hydroshed","hydrobasins_level9"))
+writeOGR(hydrobasin_mg, layer = "hydrobasin_mg_lev9", driver="ESRI Shapefile", dsn= file.path(dir_data, "hydroshed","hydrobasins_level9"), overwrite_layer = TRUE)
+
+```
+
+## PANGAEA: Stacking/ cropping file to mato grosso extent
+
+```{r }
+
+panga_braz <- rast(file.path(dir_data, "pangaea", paste0("AMZ_",2000,"_9_", 2001,"_8",".tif")))
+
+# Mato Grosso border shapefile
+mg_borders <- st_read(file.path(dir_data, "boundaries","mato grosso", "mt84.shp"))
+
+# Hydroshed hydrobasins at level 9
+for (i in c(2001:2017)){
+  newlayer <- rast(file.path(dir_data, "pangaea", paste0("AMZ_",i,"_9_", i+1,"_8",".tif")))
+  panga_braz <- c(panga_braz, newlayer)
+}
+
+# Reprojecting on WGS84
+crs <- "+proj=longlat +datum=WGS84"
+panga_braz84 <- project(panga_braz, crs)
+
+# Cropping 
+panga_braz_mt <- crop(panga_braz84, vect(mg_borders))
+
+# Writing output shapefile
+#writeRaster(panga_braz84, file = file.path(dir_data, "pangaea", "panga_braz84.tif"))
+writeRaster(panga_braz_mt, file = file.path(dir_data, "pangaea", "panga_braz84_mt.tif"))
 
 
 ```
 
-## Cropping water surfaces on hydrobasin extents
+## PANGAEA: cropping on mato grosso extent
+
+```{r }
+
+# Loading
+panga_braz84 <- rast(file.path(dir_data, "pangaea", "panga_braz84.tif"))
+
+# Cropping 
+panga_braz_mt <- crop(panga_braz84, vect(mg_borders))
+
+# Writing output shapefile
+writeRaster(panga_braz_mt, file = file.path(dir_data, "pangaea", "panga_braz84_mt.tif"))
+
+```
+
+## ELEVATION: cropping file to mato grosso extent
+
+```{r }
+
+
+# Mato Grosso border shapefile
+mg_borders <- st_read(file.path(dir_data, "boundaries","mato grosso", "mt84.shp"))
+
+# Elevation
+elevation <- rast(file.path(dir_data, "hydroshed", "hydrocon elevation", "elevation_merge.tif"))
+
+plot(elevation)
+plot(mg_borders, add=TRUE)
+
+# Cropping 
+elevation_crop <- crop(elevation, vect(mg_borders))
+
+plot(elevation_crop)
+plot(mg_borders, add=TRUE)
+
+# Writing output raster
+writeRaster(elevation_crop, file = file.path(dir_data, "hydroshed", "hydrocon elevation", "elevation_crop.tif"))
+
+
+```
+
+## WATER SURFACES: cropping on hydrobasin extents
 
 We crop and save each hydrobasin-cropped file
 
@@ -105,7 +155,7 @@ hydrobasins <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9","hyd
   ## SIMPLE LINE STREAMS ##
 
   # hydrographic network on MG
-  hydronetwork <- st_read(file.path(dir_data, "water_surface", "rios_simple84.shp"))
+  hydronetwork <- st_read(file.path(dir_data, "water_surface", "rios_simples", "rios_simple84.shp"))
   
   no_cores <- detectCores()
   cl <- makeCluster(no_cores-1) # setting up number of cores

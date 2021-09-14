@@ -1,0 +1,119 @@
+---
+title: "Land use proportion"
+output: html_document
+---
+
+We extract land use information on each hydrobasin polygon. Multi source information: Mapbiomas, Pangaea
+CRS: WGS 1984
+
+## Directories
+
+```{r }
+
+if ((Sys.info()["nodename"]) == "COP026") {
+  dir_data <- "C:/Users/arvor_d/Documents/workwork/data"
+  dir_plot <- "C:/Users/arvor_d/Documents/workwork/plot"
+} else if ((Sys.info()["nodename"]) == "COSTELSV6") {
+  dir_data <- "F:/kamir_e/$data"
+  dir_plot <- "F:/kamir_e/$plot "
+}
+
+```
+
+## Library
+
+```{r }
+
+library(plyr)
+library(dplyr)
+library(foreach)
+library(iterators)
+library(parallel)
+library(doParallel)
+library(maps)
+library(nnet)
+library(latticeExtra)
+library(sp)
+library(rgdal)
+library(raster)
+library(sf)
+library(stars)
+library(exactextractr)
+library(tictoc)
+library(terra)
+
+
+```
+
+## Computing MAPBIOMAS land coverage percent at hydrobasin level
+
+```{r }
+
+### LOADING PRE PROCESSED DATA
+
+# land use from mapbiomas
+
+biomas85_19_mt <- rast(file.path(dir_data, "processed", "biomas1985_2019_mg.tif"))
+
+# hydrobasins from hydroshed 
+
+hydrobasin <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9", "hydrobasin_mg_lev9.shp"))
+
+
+## EXTRACTING LAND USE FOR EACH POLYGON AND SAVING LIST OF DF
+
+tic()
+basin_extract("mapbiomas", biomas85_19_mt, hydrobasin[c(25,369,2625),])
+toc()
+
+```
+## Computing PANGAEA land coverage percent at hydrobasin level
+
+```{r }
+
+### LOADING PRE PROCESSED DATA
+
+# land use data
+
+panga_0018 <- rast(file.path(dir_data, "pangaea", "panga_braz84_mt.tif"))
+
+# hydrobasins from hydroshed
+
+hydrobasin <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9", "hydrobasin_mg_lev9.shp"))
+
+
+## EXTRACTING LAND USE FOR EACH POLYGON AND SAVING LIST OF DF
+
+tic()
+basin_extract("pangaea", panga_0018, hydrobasin[c(25,369,2625),])
+toc()
+
+```
+## Fixing MAPBIOMAS issues
+
+```{r }
+
+######################
+
+hydrobasin <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9", "hydrobasin_mg_lev9.shp"))
+hybas_id <- hydrobasin$HYBAS_ID
+#i <- 6091221980 #not working
+#i <- 6090405310 # working
+tu <- vector()
+
+for(i in hybas_id)  { #, .packages=c('dplyr', 'terra')) %dopar%  { 
+ 
+tu[which(hybas_id==i)] <- tryCatch(expr=load(file = file.path(dir_data, "processed", paste0("extractbiom_",i,".RData"))), warning = function(e) {an.error.occured <<- TRUE}) #, silent=TRUE
+  
+}
+
+save(tu, file=file.path(dir_data, "processed", paste0("error_landuse.RData")))
+
+######################
+
+load(file=file.path(dir_data, "processed", "mapbiomas_extractbasin_6090618540.RData"))
+st_area(hydrobasin[2625,])
+df_export %>% sum('fraction')*900
+
+```
+

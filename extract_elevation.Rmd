@@ -1,12 +1,13 @@
 ---
-title: "Land use proportion"
+title: "Elevation"
 output: html_document
 ---
+
+We extract hydrologically conditioned elevation (data source: Hydroshed)
 
 ## Directories
 
 ```{r }
-
 
 if ((Sys.info()["nodename"]) == "COP026") {
   dir_data <- "C:/Users/arvor_d/Documents/workwork/data"
@@ -43,34 +44,25 @@ library(terra)
 
 ```
 
-## Computing mapbiomas land coverage percent at hydrobasin level
-
-1. on one year only for now
-2. loop on hydrobasin polygon
-
+## Extracting ELEVATION on each hydrobasin 
 
 ```{r }
 
 ### LOADING PRE PROCESSED DATA
 
 # land use from mapbiomas
-biomas85_19_mt <- rast(file.path(dir_data, "processed", "biomas1985_2019_mg.tif"))
 
-# hydrobasins from hydroshed on utm projection
+elevation_ras <- rast(file.path(dir_data, "hydroshed", "hydrocon elevation", "elevation_crop.tif"))
+
+# hydrobasins from hydroshed 
 
 hydrobasin <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9", "hydrobasin_mg_lev9.shp"))
+
 
 ## EXTRACTING LAND USE FOR EACH POLYGON AND SAVING LIST OF DF
 
 tic()
-basin_extract(biomas85_19_mt, hydrobasin)
+basin_extract("elevation", elevation_ras, hydrobasin[c(25,369,2625),])
 toc()
 
-# tic()
-# basin_extract_parallel(biomas85_19_mt[[1]], hydrobasin[1:16,])
-# toc()
-
 ```
-
-
-

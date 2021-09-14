@@ -48,10 +48,12 @@ Loading hydrographic network data (multi source data gathered by gov)
 ```{r }
 
 # hydrobasin on MG
-hydrobasin_mg <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9","hydrobasin_mg.shp"))
+hydrobasins <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9","hydrobasin_mg_lev9.shp"))
 
-# hydrographic network on MG
-hydronetwork <- st_read(file.path(dir_data, "water_surface", "second.shp"))
+# water reservoirs
+lago <- st_read(file.path(dir_data, "processed",paste0("lago_crop9_",i-1,".shp")))  
+# dim(hydrobasins)[1]
+
 
 no_cores <- detectCores()
 cl <- makeCluster(no_cores) # setting up number of cores

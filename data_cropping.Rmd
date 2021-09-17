@@ -2,12 +2,13 @@
 title: "Data preprocessing"
 output: html_document
 ---
-## Directories
 
 # Reminder:
 #hydrobasins <- shapefile(file.path(dir_data, "hydroshed","hydrobasins_level9","hydrobasin_mg_lev9.shp"))
 #hydronetwork <- shapefile(file.path(dir_data, "water_surface", "second.shp"))
 #hydronetwork <- readOGR(dsn=file.path(dir_data, "water_surface", "second.shp"))
+
+## Directories
 
 ```{r }
 
@@ -23,7 +24,7 @@ if ((Sys.info()["nodename"]) == "COP026") {
 
 ## Library
 
-```{r setup, include=FALSE}
+```{r }
 
 library(plyr)
 library(tidyverse)
@@ -49,9 +50,7 @@ library(terra)
 
 ```
 
-
 ## HYDROBASINS: Cropping SHP to mato grosso extent
-
 
 ```{r }
 
@@ -66,35 +65,6 @@ hydrobasin_mg <- intersect(hydrobasins, mg_borders)
 
 # Writing output shapefile
 writeOGR(hydrobasin_mg, layer = "hydrobasin_mg_lev9", driver="ESRI Shapefile", dsn= file.path(dir_data, "hydroshed","hydrobasins_level9"), overwrite_layer = TRUE)
-
-```
-
-## PANGAEA: Stacking/ cropping file to mato grosso extent
-
-```{r }
-
-panga_braz <- rast(file.path(dir_data, "pangaea", paste0("AMZ_",2000,"_9_", 2001,"_8",".tif")))
-
-# Mato Grosso border shapefile
-mg_borders <- st_read(file.path(dir_data, "boundaries","mato grosso", "mt84.shp"))
-
-# Hydroshed hydrobasins at level 9
-for (i in c(2001:2017)){
-  newlayer <- rast(file.path(dir_data, "pangaea", paste0("AMZ_",i,"_9_", i+1,"_8",".tif")))
-  panga_braz <- c(panga_braz, newlayer)
-}
-
-# Reprojecting on WGS84
-crs <- "+proj=longlat +datum=WGS84"
-panga_braz84 <- project(panga_braz, crs)
-
-# Cropping 
-panga_braz_mt <- crop(panga_braz84, vect(mg_borders))
-
-# Writing output shapefile
-#writeRaster(panga_braz84, file = file.path(dir_data, "pangaea", "panga_braz84.tif"))
-writeRaster(panga_braz_mt, file = file.path(dir_data, "pangaea", "panga_braz84_mt.tif"))
-
 
 ```
 
@@ -148,6 +118,7 @@ We crop and save each hydrobasin-cropped file
 ### 1. LOADING HYDROBASINS ###
 
 hydrobasins <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9","hydrobasin_mg_lev9.shp"))
+hybas_id <- hydrobasins$HYBAS_ID
 
 
 ### 2. CROPPING FILES ON HYDORBASIN EXTENTS ###
@@ -155,36 +126,39 @@ hydrobasins <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9","hyd
   ## SIMPLE LINE STREAMS ##
 
   # hydrographic network on MG
-  hydronetwork <- st_read(file.path(dir_data, "water_surface", "rios_simples", "rios_simple84.shp"))
+hydronetwork <- st_read(file.path(dir_data, "water_surface", "rios_simples", "rios_simple84.shp"))
   
+tictoc::tic()
   no_cores <- detectCores()
   cl <- makeCluster(no_cores-1) # setting up number of cores
   registerDoParallel(cl) # parallelizing on them
   
-  foreach(i=1:dim(hydrobasins)[1], .packages=c('sf')) %dopar%  { #
+  foreach(i=hybas_id, .packages=c('sf')) %dopar%  { #
+      ligne = which(hydrobasins$HYBAS_ID==i)
       # cropping single rivers on watershed level
-    crop_list <- st_intersects(hydrobasins[i,],hydronetwork)
+    crop_list <- st_intersects(hydrobasins[ligne,],hydronetwork)
     crop_shp <- hydronetwork[unlist(crop_list),]
-    st_write(crop_shp, file.path(dir_data, "processed",paste0("cropped_lev09hydrnetw",i-1,".shp")), delete_layer = TRUE)
+    st_write(crop_shp, file.path(dir_data, "processed",paste0("riossimple_poly",i,".shp")), delete_layer = TRUE)
   
    }
   
   stopCluster(cl)
-  
+tictoc::toc() 
+ 
   ## POLY LINE STREAMS ##
   
   # poly-hydrographic network on MG
-  polynetwork <- st_read(file.path(dir_data, "water_surface", "rios_poly", "output_hidro_poly.shp"))
+polynetwork <- st_read(file.path(dir_data, "water_surface", "rios_poly", "output_hidro_poly.shp"))
   
   no_cores <- detectCores()
   cl <- makeCluster(no_cores-1) # setting up number of cores
   registerDoParallel(cl) # parallelizing on them
-  
-  foreach(i=1:dim(hydrobasins)[1], .packages=c('sf')) %dopar%  { #
+  foreach(i=hybas_id, .packages=c('sf')) %dopar%  { #
+      ligne = which(hydrobasins$HYBAS_ID==i)
       # cropping single rivers on watershed level
-    crop_list <- st_intersects(hydrobasins[i,],polynetwork)
+    crop_list <- st_intersects(hydrobasins[ligne,],polynetwork)
     poly_shp <- polynetwork[unlist(crop_list),]
-    st_write(poly_shp, file.path(dir_data, "processed",paste0("poly_crop9",i-1,".shp")), delete_layer = TRUE)
+    st_write(poly_shp, file.path(dir_data, "processed", paste0("riospoly_poly",i,".shp")), delete_layer = TRUE)
   
    }
   
@@ -199,11 +173,12 @@ hydrobasins <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9","hyd
   cl <- makeCluster(no_cores-1) # setting up number of cores
   registerDoParallel(cl) # parallelizing on them
   
-  foreach(i=1:dim(hydrobasins)[1], .packages=c('sf')) %dopar%  { #
+  foreach(i=hybas_id, .packages=c('sf')) %dopar%  { #
+      ligne = which(hydrobasins$HYBAS_ID==i)
       # cropping single rivers on watershed level
-    crop_list <- st_intersects(hydrobasins[i,],lago)
+    crop_list <- st_intersects(hydrobasins[ligne,],lago)
     lago_shp <- lago[unlist(crop_list),]
-    st_write(lago_shp, file.path(dir_data, "processed",paste0("lago_crop9_",i-1,".shp")), delete_layer = TRUE)
+    st_write(lago_shp, file.path(dir_data, "processed",paste0("lago_poly",i,".shp")), delete_layer = TRUE)
   
    }
   
@@ -220,11 +195,12 @@ hydrobasins <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9","hyd
   cl <- makeCluster(no_cores-1) # setting up number of cores
   registerDoParallel(cl) # parallelizing on them
   
-  foreach(i=1:dim(hydrobasins)[1], .packages=c('sf')) %dopar%  { #
-      # cropping single rivers on watershed level
-    crop_list <- st_intersects(hydrobasins[i,],nascente)
+  foreach(i=hybas_id, .packages=c('sf')) %dopar%  { #
+       ligne = which(hydrobasins$HYBAS_ID==i)
+     # cropping single rivers on watershed level
+    crop_list <- st_intersects(hydrobasins[ligne,],nascente)
     nascente_shp <- nascente[unlist(crop_list),]
-    st_write(nascente_shp, file.path(dir_data, "processed",paste0("source_crop9_",i-1,".shp")), delete_layer = TRUE)
+    st_write(nascente_shp, file.path(dir_data, "processed",paste0("source_poly",i,".shp")), delete_layer = TRUE)
   
    }
   

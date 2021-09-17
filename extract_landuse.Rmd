@@ -53,7 +53,7 @@ library(terra)
 
 # land use from mapbiomas
 
-biomas85_19_mt <- rast(file.path(dir_data, "processed", "biomas1985_2019_mg.tif"))
+biomas85_19_mt <- rast(file.path(dir_data, "mapbiomas", "biomas1985_2019_mg.tif"))
 
 # hydrobasins from hydroshed 
 
@@ -67,6 +67,7 @@ basin_extract("mapbiomas", biomas85_19_mt, hydrobasin[c(25,369,2625),])
 toc()
 
 ```
+
 ## Computing PANGAEA land coverage percent at hydrobasin level
 
 ```{r }

@@ -1,0 +1,69 @@
+---
+title: "Extracting flow accumulation"
+output: html_document
+---
+
+We extract flow accumulation (data source: Hydroshed):
+
+
+## Directories
+
+```{r }
+
+if ((Sys.info()["nodename"]) == "COP026") {
+  dir_data <- "C:/Users/arvor_d/Documents/workwork/data"
+  dir_plot <- "C:/Users/arvor_d/Documents/workwork/plot"
+} else if ((Sys.info()["nodename"]) == "COSTELSV6") {
+  dir_data <- "F:/kamir_e/$data"
+  dir_plot <- "F:/kamir_e/$plot "
+}
+
+```
+
+## Library
+
+```{r }
+
+library(plyr)
+library(dplyr)
+library(foreach)
+library(iterators)
+library(parallel)
+library(doParallel)
+library(maps)
+library(nnet)
+library(latticeExtra)
+library(sp)
+library(rgdal)
+library(raster)
+library(sf)
+library(stars)
+library(exactextractr)
+library(tictoc)
+library(terra)
+
+
+```
+
+## Extracting FLOW ACCUMULATION on each hydrobasin 
+
+```{r }
+
+### LOADING PRE PROCESSED DATA
+
+# land use from mapbiomas
+
+flowacc <- rast(file.path(dir_data, "hydroshed", "flow_acc", "sa_acc_15s", "flowacc_crop.tif"))
+
+# hydrobasins from hydroshed 
+
+hydrobasin <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9", "hydrobasin_mg_lev9.shp"))
+
+
+## EXTRACTING LAND USE FOR EACH POLYGON AND SAVING LIST OF DF
+
+tic()
+basin_extract("flowacc", flowacc, hydrobasin[c(25,369,2625),])
+toc()
+
+```

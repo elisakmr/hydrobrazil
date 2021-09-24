@@ -18,7 +18,7 @@ if ((Sys.info()["nodename"]) == "COP026") {
 
 ## Library
 
-```{r setup, include=FALSE}
+```{r }
 
 library(plyr)
 library(dplyr)
@@ -37,6 +37,41 @@ library(stars)
 library(exactextractr)
 library(tictoc)
 library(terra)
+
+```
+
+
+## Extract raster value for each basin polygon, NO PARALLEL PROCESSING
+
+
+
+```{r }
+
+basin_extract = function(source, landuse.rast, basin.sf){
+  
+  # we extract landuse cells from each basin polygon
+  # first we crop the landuse raster on polygon extent
+  # then we use extract function, which also gives cell fraction and coordinates
+  # we save a list of data frame (1 df per polygon)
+  
+  hybas_id <- basin.sf$HYBAS_ID
+ 
+  for(i in hybas_id)  { #, .packages=c('dplyr', 'terra')) %dopar%  { 
+
+    ligne = which(basin.sf$HYBAS_ID==i)
+    landuse_crop <- terra::crop(landuse.rast, basin.sf[ligne,], snap='out')
+    
+    df_extract <- terra::extract(landuse_crop,vect(basin.sf[ligne,]), exact=TRUE, xy=TRUE)
+
+    df_export <- df_extract %>% mutate(poly.id=i) %>% rename(x=fraction,y=x,fraction=y)
+
+    save(df_export, file = file.path(dir_data, "processed", paste0(source, "_extractbasin_",i,".RData")))
+
+      }
+  
+}
+
+
 
 ```
 
@@ -77,41 +112,6 @@ basin_extract_parallel = function(landuse.rast, basin.sf){
   
 }
 
-
-
-
-```
-
-
-## Extract raster value for each basin polygon, NO PARALLEL PROCESSING
-
-
-
-```{r }
-
-basin_extract = function(landuse.rast, basin.sf){
-  
-  # we extract landuse cells from each basin polygon
-  # first we crop the landuse raster on polygon extent
-  # then we use extract function, which also gives cell fraction and coordinates
-  # we save a list of data frame (1 df per polygon)
-  
-  hybas_id <- basin.sf$HYBAS_ID
- 
-  for(i in hybas_id)  { #, .packages=c('dplyr', 'terra')) %dopar%  { 
-
-    ligne = which(basin.sf$HYBAS_ID==i)
-    landuse_crop <- terra::crop(landuse.rast, basin.sf[ligne,], snap='out')
-    
-    df_extract <- terra::extract(landuse_crop,vect(basin.sf[ligne,]), exact=TRUE, xy=TRUE)
-
-    df_export <- df_extract %>% mutate(poly.id=i) %>% rename(x=fraction,y=x,fraction=y)
-
-    save(df_export, file = file.path(dir_data, "processed", paste0("extractbiom_",i,".RData")))
-
-      }
-  
-}
 
 
 

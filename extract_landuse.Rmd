@@ -63,7 +63,7 @@ hydrobasin <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9", "hyd
 ## EXTRACTING LAND USE FOR EACH POLYGON AND SAVING LIST OF DF
 
 tic()
-basin_extract("mapbiomas", biomas85_19_mt, hydrobasin[c(25,369,2625),])
+basin_extract("mapbiomas", biomas85_19_mt, hydrobasin[c(444,821,3126),])
 toc()
 
 ```
@@ -86,10 +86,11 @@ hydrobasin <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9", "hyd
 ## EXTRACTING LAND USE FOR EACH POLYGON AND SAVING LIST OF DF
 
 tic()
-basin_extract("pangaea", panga_0018, hydrobasin[c(25,369,2625),])
+basin_extract("pangaea", panga_0018, hydrobasin)
 toc()
 
 ```
+
 ## Fixing MAPBIOMAS issues
 
 ```{r }

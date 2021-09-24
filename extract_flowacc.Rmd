@@ -41,6 +41,7 @@ library(stars)
 library(exactextractr)
 library(tictoc)
 library(terra)
+library(base)
 
 
 ```
@@ -63,7 +64,7 @@ hydrobasin <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9", "hyd
 ## EXTRACTING LAND USE FOR EACH POLYGON AND SAVING LIST OF DF
 
 tic()
-basin_extract("flowacc", flowacc, hydrobasin[c(25,369,2625),])
+basin_extract("flowacc", flowacc, hydrobasin)
 toc()
 
 ```

@@ -3,10 +3,6 @@ title: "Data preprocessing"
 output: html_document
 ---
 
-# Reminder:
-#hydrobasins <- shapefile(file.path(dir_data, "hydroshed","hydrobasins_level9","hydrobasin_mg_lev9.shp"))
-#hydronetwork <- shapefile(file.path(dir_data, "water_surface", "second.shp"))
-#hydronetwork <- readOGR(dsn=file.path(dir_data, "water_surface", "second.shp"))
 
 ## Directories
 
@@ -130,7 +126,7 @@ hydronetwork <- st_read(file.path(dir_data, "water_surface", "rios_simples", "ri
   
 tictoc::tic()
   no_cores <- detectCores()
-  cl <- makeCluster(no_cores-1) # setting up number of cores
+  cl <- makeCluster(no_cores) # setting up number of cores
   registerDoParallel(cl) # parallelizing on them
   
   foreach(i=hybas_id, .packages=c('sf')) %dopar%  { #
@@ -151,7 +147,7 @@ tictoc::toc()
 polynetwork <- st_read(file.path(dir_data, "water_surface", "rios_poly", "output_hidro_poly.shp"))
   
   no_cores <- detectCores()
-  cl <- makeCluster(no_cores-1) # setting up number of cores
+  cl <- makeCluster(no_cores) # setting up number of cores
   registerDoParallel(cl) # parallelizing on them
   foreach(i=hybas_id, .packages=c('sf')) %dopar%  { #
       ligne = which(hydrobasins$HYBAS_ID==i)
@@ -170,7 +166,7 @@ polynetwork <- st_read(file.path(dir_data, "water_surface", "rios_poly", "output
   lago <- st_read(file.path(dir_data, "water_surface", "lago", "input_lago_reservatorio_icv.shp"))
   
   no_cores <- detectCores()
-  cl <- makeCluster(no_cores-1) # setting up number of cores
+  cl <- makeCluster(no_cores) # setting up number of cores
   registerDoParallel(cl) # parallelizing on them
   
   foreach(i=hybas_id, .packages=c('sf')) %dopar%  { #
@@ -192,7 +188,7 @@ polynetwork <- st_read(file.path(dir_data, "water_surface", "rios_poly", "output
   nascente <- st_read(file.path(dir_data, "water_surface", "nascentes", "nascente84.shp"))
   
   no_cores <- detectCores()
-  cl <- makeCluster(no_cores-1) # setting up number of cores
+  cl <- makeCluster(no_cores) # setting up number of cores
   registerDoParallel(cl) # parallelizing on them
   
   foreach(i=hybas_id, .packages=c('sf')) %dopar%  { #

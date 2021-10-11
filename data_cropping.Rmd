@@ -134,7 +134,7 @@ tictoc::tic()
       # cropping single rivers on watershed level
     crop_list <- st_intersects(hydrobasins[ligne,],hydronetwork)
     crop_shp <- hydronetwork[unlist(crop_list),]
-    st_write(crop_shp, file.path(dir_data, "processed",paste0("riossimple_poly",i,".shp")), delete_layer = TRUE)
+    st_write(crop_shp, file.path(dir_data, "water_surface", "rios_simples", paste0("riossimple_poly",i,".shp")), delete_layer = TRUE)
   
    }
   
@@ -154,7 +154,7 @@ polynetwork <- st_read(file.path(dir_data, "water_surface", "rios_poly", "output
       # cropping single rivers on watershed level
     crop_list <- st_intersects(hydrobasins[ligne,],polynetwork)
     poly_shp <- polynetwork[unlist(crop_list),]
-    st_write(poly_shp, file.path(dir_data, "processed", paste0("riospoly_poly",i,".shp")), delete_layer = TRUE)
+    st_write(poly_shp, file.path(dir_data, "water_surface", "rios_poly", paste0("riospoly_poly",i,".shp")), delete_layer = TRUE)
   
    }
   
@@ -174,7 +174,7 @@ polynetwork <- st_read(file.path(dir_data, "water_surface", "rios_poly", "output
       # cropping single rivers on watershed level
     crop_list <- st_intersects(hydrobasins[ligne,],lago)
     lago_shp <- lago[unlist(crop_list),]
-    st_write(lago_shp, file.path(dir_data, "processed",paste0("lago_poly",i,".shp")), delete_layer = TRUE)
+    st_write(lago_shp, file.path(dir_data, "water_surface", "lago", paste0("lago_poly",i,".shp")), delete_layer = TRUE)
   
    }
   
@@ -196,7 +196,7 @@ polynetwork <- st_read(file.path(dir_data, "water_surface", "rios_poly", "output
      # cropping single rivers on watershed level
     crop_list <- st_intersects(hydrobasins[ligne,],nascente)
     nascente_shp <- nascente[unlist(crop_list),]
-    st_write(nascente_shp, file.path(dir_data, "processed",paste0("source_poly",i,".shp")), delete_layer = TRUE)
+    st_write(nascente_shp, file.path(dir_data, "water_surface", "nascentes", paste0("source_poly",i,".shp")), delete_layer = TRUE)
   
    }
   

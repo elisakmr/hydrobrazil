@@ -7,6 +7,7 @@
 # hydronetwork <- readOGR(dsn=file.path(dir_data, "water_surface", "second.shp"))
 # newflow_mb <- resample(rast_flow, rast_biomas, method = 'ngb') # we put flow raster (15 sec) at mapbiomas resolution (30m) 
 # %in%
-# hydrobasin <- st_transform(hydrobasin, crs="EPSG:32721")
-# lat_weight <- cos(pi*mean(st_coordinates(basins)[,'Y'])/180)
+# spp_biomas_utm<- st_transform(spp_biomas, crs="EPSG:32721") 
+# crop_list <- st_intersects(hydrobasins[ligne,],nascente)
+# nascente_shp <- nascente[unlist(crop_list),]
 

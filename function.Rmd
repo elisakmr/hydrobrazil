@@ -37,6 +37,8 @@ library(stars)
 library(exactextractr)
 library(tictoc)
 library(terra)
+library(openxlsx)
+
 
 ```
 

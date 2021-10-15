@@ -19,7 +19,7 @@ for (i in 1:dim(hydrobasins)[1]){
 
   ## Extract ##
 
-source <-"mapbiomas"
+source <-"flowacc"
 hybas_id <- hydrobasins$HYBAS_ID
 i <- hybas_id[369] #25,369,2625
 #ligne = which(hybas_id==i)
@@ -33,62 +33,96 @@ plot(rast_check)
 
 writeRaster(rast_check, file = file.path(dir_data, "processed", paste0(source,"_check.tif")), overwrite = TRUE)
 
-crsshp <- "EPSG:32721"
-crsterra <- CRS('+init=epsg:32721')
-hydrobasin <- st_transform(hydrobasins, crs=crsshp)
-elevation_ras <- 
-biom_21 <- terra::project(panga_braz[[1]], crsterra) #flowacc
-biom_21 <- raster::projectRaster(panga_braz[[1]], crs=crsterra) #flowacc
-flow_21 <- terra::project(flowacc, crsterra)
-plot(biom_21)
-plot(panga_braz[[1]])
-extract1 <- raster::extract(panga_braz84, hydrobasin[1,], exact=TRUE)
-extract2 <- exact_extract(panga_braz84, hydrobasin[1,])
-df <- as.data.frame(extract1)
-max(df[,2])
-dim(df)
-int_raster <- intersect(panga_braz84, hydrobasin[1,])
-
-sum(df[,2])*250*250
-st_area(hydrobasin[1,])
-
-r <- raster(nrow=3, ncol=3, crs=crsshp)
-plot(r)
-newpanga <- resample(panga_braz84, r, method = 'ngb')
-
-df_extract <- terra::extract(panga_0018,vect(hydrobasin[3,]), exact=TRUE, xy=TRUE)
-sum((spp_modis %>% filter(AMZ_2014_9_2015_8 == 100))$fraction)*62500/st_area(basins)*lat_weight
-
-# trying sf functions on rios-nascente intersection
-
-hybas_id<-6090408590
+# triying sf functionss
+hybas_id<-6090596700
 
 riosimple <- st_read(file.path(dir_data,"water_surface", "rios_simples", paste0("riossimple_poly",hybas_id,".shp")))
 nascente <- st_read(file.path(dir_data, "water_surface","nascentes", paste0("source_poly",hybas_id,".shp")))
 lariviere <- riosimple %>% filter(FONTE==1706)
-water_source <- st_crosses(riosimple, nascente, sparse = FALSE)
+water_source <- st_within(riosimple, nascente)
+length(which(water_source))
 length(water_source)
 
-# changing projection to planar
-riosimple_utm <- st_transform(riosimple, crs="EPSG:32721")
-nascente_utm <- st_transform(nascente, crs="EPSG:32721")
-ligne = which(hydrobasins$HYBAS_ID==hybas_id)
+# intersecting upstream buffer and land use with SF
+tictoc::tic()
+mapbiom_up <- st_intersects(spp_biomas, buf_stream[12,], sparse = TRUE)
+tictoc::toc()
+st_write(spp_biomas[unlist(mapbiom_up),], file.path(dir_data, "processed", "water", paste0("crop_map12.shp")), delete_layer = TRUE)
+st_write(buf_stream[12,], file.path(dir_data, "processed", "water", paste0("buf6090484790_bis.shp")), delete_layer = TRUE)
+spp_biomas_utm<- st_transform(spp_biomas, crs="EPSG:32721") 
+buf_stream_utm<- st_transform(buf_stream, crs="EPSG:32721") 
+mapbiom_up_utm <- st_intersects(spp_biomas, buf_stream[1,])
 
-# buffering 
-water_source <- st_within(hydrobasins[ligne,],riosimple, sparse = TRUE) #
+plot(spp_biomas[unlist(mapbiom_up_utm),])
+spp_biomas[unlist(mapbiom_up_utm),]
+plot(mapbiom_crop)
 
-buf_source50 <- st_buffer(nascente, dist=50)
-plot(buf_source50)
-st_write(buf_source50, file.path(dir_data, "water_surface","nascentes",paste0("50nascente_buff",hybas_id,".shp")), delete_layer = TRUE)
-buf_source100 <- st_buffer(nascente, dist=100)
-plot(buf_source100)
-st_write(buf_source50, file.path(dir_data, "water_surface","nascentes",paste0("100nascente_buff",hybas_id,".shp")), delete_layer = TRUE)
-buf_source200 <- st_buffer(nascente, dist=200)
-plot(buf_source100)
-st_write(buf_source50, file.path(dir_data, "water_surface","nascentes",paste0("200nascente_buff",hybas_id,".shp")), delete_layer = TRUE)
+plot(buf_stream)
+plot(spp_biomas)
+plot(spp_biomas[unlist(mapbiom_up),])
+sum(st_area(buf_stream))
+plot(mapbiom_up)
 
-# within on buffered sources
+buf_mb <- st_buffer(spp_biomas, dist=0.0000001) 
 
-buf_source <- st_buffer(nascente, dist=0.0000001)
-water_source <- st_crosses(buf_source10,riosimple, sparse = TRUE) #
+mapbiom_up1 <- st_crosses(buf_mb, buf_stream[1,])
+plot(buf_stream[1,])
+plot(spp_biomas[unlist(mapbiom_up1)])
+st_write(spp_biomas[unlist(mapbiom_up1),], file.path(dir_data, "processed", "water", paste0("crop_map103",i,".shp")), delete_layer = TRUE)
+
+# intersecting upstream buffer and land use with SHAPEFILE
+
+spp_biomas_sp <- as(spp_biomas, "Spatial")
+plot(spp_biomas_sp)
+buf_stream_sp <- as(buf_stream, "Spatial")
+plot(buf_stream_sp)
+biom_up <- over(spp_biomas_sp, buf_stream_sp[1,], returnList = TRUE)#
+biom_up <- na.omit(biom_up)
+nrow(biom_up)
+lapply(biom_up, FUN=nrow)
+
+spp_biomas[unlist(mapbiom_up_utm),]
+nrow(spp_biomas[unlist(mapbiom_up_utm),] %>% filter(bio_30 == 3))
+
+class(biom_up)
+
+spp_biomas[unlist(mapbiom_up),]$bio_30
+st_write(spp_biomas[unlist(mapbiom_up),], file.path(dir_data, "processed", "water", paste0("crop_map_comp.shp")), delete_layer = TRUE)
+writeOGR(biom_up, dsn=file.path(dir_data, "processed", "water", paste0("crop_map_comp2.shp")), driver="ESRI Shapefile")
+
+lu_int <- st_intersection(spp_biomas, buf_stream[12,])
+plot(lu_int)
+
+# optimizing
+tictoc::tic()
+vuln_shp<- basin %>% mutate(for_up=for_up, soy=soy, sug_ma=sug_ma, temp=temp, perm = perm, past_ma = past_ma, agrpast = agrpast, aquacult = aquacult, wet = wet, foret_ma = foret_ma, sav=sav, mang=mang, forplan=forplan, cotton_fallow = cotton_fallow, soy_fallow = soy_fallow, millet_cotton = millet_cotton, soy_millet = soy_millet, soy_corn = soy_corn, soy_cotton = soy_cotton, past_mo = past_mo, foret_mo = foret_mo, sav_mo=sav_mo, sug_mo = sug_mo, n_dam = n_dam)
+
+st_write(vuln_shp, file.path(dir_data,paste0(year,"_vulnerabilitylol_", hybas_id, ".shp")), delete_layer = TRUE)
+tictoc::toc()
+
+tictoc::tic()
+df_vuln <- data.frame(for_up=for_up, soy=soy, sug_ma=sug_ma, temp=temp, perm = perm, past_ma = past_ma, agrpast = agrpast, aquacult = aquacult, wet = wet, foret_ma = foret_ma, sav=sav, mang=mang, forplan=forplan, cotton_fallow = cotton_fallow, soy_fallow = soy_fallow, millet_cotton = millet_cotton, soy_millet = soy_millet, soy_corn = soy_corn, soy_cotton = soy_cotton, past_mo = past_mo, foret_mo = foret_mo, sav_mo=sav_mo, sug_mo = sug_mo, n_dam = n_dam)
+save(df_vuln, file=file.path(dir_data,paste0(year,"_vulnerabilitylol2_", hybas_id, ".shp")))
+tictoc::toc()
+
+
+df_biom<-read.table(file=file.path(dir_data, "processed", paste0("mapbiomas_extractbasin_",hybas_id,".RData")))
+tictoc::tic()
+df_biom<-get(load(file=file.path(dir_data, "processed", paste0("mapbiomas_extractbasin_",hybas_id,".RData"))))
+tictoc::toc()
+tictoc::tic()
+load(file=file.path(dir_data, "processed", paste0("mapbiomas_extractbasin_",hybas_id,".RData")))
+tictoc::toc()
+
+tictoc::tic()
+spp_biomas <- st_as_sf(cbind(value=df_export[,year_index+16],df_export[,c('x','y', 'fraction')]), coords = c("x","y"), crs = "+proj=longlat +datum=WGS84")#
+past_ma <- sum((spp_biomas %>% filter(value==15))$fraction)*900/basin_surface_mb
+tictoc::toc()
+
+tictoc::tic()
+past_ma <- sum((df_export %>% filter(bio_1==15))$fraction)*900/basin_surface_mb
+tictoc::toc()
+
+
+
 

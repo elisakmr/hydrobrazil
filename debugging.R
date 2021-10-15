@@ -123,6 +123,17 @@ tictoc::tic()
 past_ma <- sum((df_export %>% filter(bio_1==15))$fraction)*900/basin_surface_mb
 tictoc::toc()
 
+### missing poly on vulnerability run
 
+sf_list_name <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(2015,".+.shp"), full.names = TRUE)
+sf_list_files <- lapply(sf_list_name, st_read)
+ids <- unlist(lapply(sf_list_files, '[[', "HYBAS_I"))
+vecttrue<-vector()
+for (i in 2:3389){
+  vecttrue[i]<-which(hydrobasin$HYBAS_ID[i]%in%ids)
+}
 
+### forest up above 1
+
+basin <- 6090553710
 

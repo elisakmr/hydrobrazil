@@ -135,5 +135,15 @@ for (i in 2:3389){
 
 ### forest up above 1
 
-basin <- 6090553710
+which(is.na(unlist(lapply(sf_list_files, '[[', ordonnee))))
 
+# id=6090448700, 2000
+
+plot(buf_stream)
+plot(riosimple, new)
+plot(basin$geometry, add=TRUE)
+
+
+st_write(buf_stream, file.path(dir_data, "vulnerability", "buf6090448700.shp"), delete_layer = TRUE)
+
+hybas_id=6090453090

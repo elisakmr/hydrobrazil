@@ -18,3 +18,8 @@
 # %>% rename(value=year_index)
 
 # sf_list_name <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(year_select,".+.shp"), full.names = TRUE)
+
+# R.Version()$version.string
+# updateR()
+
+# df in loop: df <- do.call("rbind",mylist)

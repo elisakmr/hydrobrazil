@@ -1,5 +1,5 @@
 ---
-title: "Plot vulnerability features"
+title: "Plot yearly vulnerability features"
 output: html_document
 ---
 
@@ -25,19 +25,7 @@ library(plyr)
 library(tidyverse)
 library(tidyr)
 library(dplyr)
-library(foreach)
-library(iterators)
-library(lwgeom)
-library(parallel)
-library(doParallel)
-library(maps)
-library(nnet)
 library(ggplot2)
-library(latticeExtra)
-library(sp)
-library(rgdal)
-library(raster)
-library(stringi)
 library(ggmap)
 library(sf)
 library(viridis)
@@ -49,24 +37,27 @@ library(patchwork)
 
 ```{r }
 
+# time frame 
 years <- c(2003, 2006, 2009, 2012, 2015, 2017)
-year_select <- years[2]
+year_select <- years[6]
+
+# features to work on
 abscisse1 <- "soy"
 ordonnee1 <- "foret_ma"
 
-abscisse2 <- "soy"
-ordonnee2 <- "past_ma"
+abscisse2 <- "past_ma"
+ordonnee2 <- "foret_ma"
 
 abscisse3 <- "past_ma"
-ordonnee3 <- "foret_ma"
+ordonnee3 <- "soy"
 
-abscisse4 <- "foret_mo"
-ordonnee4 <- "sy_mllt"
+abscisse4 <- "temp"
+ordonnee4 <- "foret_ma"
 
-abscisse5 <- "agrpast"
-ordonnee5 <- "foret_ma"
+abscisse5 <- "sy_fllw"
+ordonnee5 <- "sy_crn"
 
-abscisse6 <- "sy_ct"
+abscisse6 <- "for_up"
 ordonnee6 <- "soy"
 
 
@@ -78,34 +69,26 @@ merging data into one table
 
 ```{r }
 
+#
+sf_list_name <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(year_select,".+.shp"), full.names = TRUE)
 
-sf_list_name1 <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(years[1],".+.shp"), full.names = TRUE)
-sf_list_name2 <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(years[2],".+.shp"), full.names = TRUE)
-sf_list_name3 <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(years[3],".+.shp"), full.names = TRUE)
-sf_list_name4 <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(years[5],".+.shp"), full.names = TRUE)
-sf_list_name5 <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(years[5],".+.shp"), full.names = TRUE)
-sf_list_name6 <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(years[6],".+.shp"), full.names = TRUE)
+sf_list_file <- lapply(sf_list_name, st_read)
+#
 
-sf_list_file1 <- lapply(sf_list_name1, st_read)
-sf_list_file2 <- lapply(sf_list_name2, st_read)
-sf_list_file3 <- lapply(sf_list_name3, st_read)
-sf_list_file4 <- lapply(sf_list_name4, st_read)
-sf_list_file5 <- lapply(sf_list_name5, st_read)
-sf_list_file6 <- lapply(sf_list_name6, st_read)
-
-
-df_result <- data.frame(x1= unlist(lapply(sf_list_file1, '[[', abscisse1)),
-                        y1=unlist(lapply(sf_list_file1, '[[', ordonnee1)),
-                        x2= unlist(lapply(sf_list_file2, '[[', abscisse2)),
-                        y2=unlist(lapply(sf_list_file2, '[[', ordonnee2)), 
-                        x3= unlist(lapply(sf_list_file3, '[[', abscisse3)),
-                        y3=unlist(lapply(sf_list_file3, '[[', ordonnee3)),
-                        x4= unlist(lapply(sf_list_file4, '[[', abscisse4)),
-                        y4=unlist(lapply(sf_list_file4, '[[', ordonnee4)),
-                        x5= unlist(lapply(sf_list_file5, '[[', abscisse5)),
-                        y5=unlist(lapply(sf_list_file5, '[[', ordonnee5)),
-                        x6= unlist(lapply(sf_list_file6, '[[', abscisse6)),
-                        y6=unlist(lapply(sf_list_file6, '[[', ordonnee6)))
+df_result <- data.frame(polyid= unlist(lapply(sf_list_file, '[[', "HYBAS_ID")),
+                        x1= unlist(lapply(sf_list_file, '[[', abscisse1)),
+                        y1=unlist(lapply(sf_list_file, '[[', ordonnee1)),
+                        x2= unlist(lapply(sf_list_file, '[[', abscisse2)),
+                        y2=unlist(lapply(sf_list_file, '[[', ordonnee2)), 
+                        x3= unlist(lapply(sf_list_file, '[[', abscisse3)),
+                        y3=unlist(lapply(sf_list_file, '[[', ordonnee3)),
+                        x4= unlist(lapply(sf_list_file, '[[', abscisse4)),
+                        y4=unlist(lapply(sf_list_file, '[[', ordonnee4)),
+                        x5= unlist(lapply(sf_list_file, '[[', abscisse5)),
+                        y5=unlist(lapply(sf_list_file, '[[', ordonnee5)),
+                        x6= unlist(lapply(sf_list_file, '[[', abscisse6)),
+                        y6=unlist(lapply(sf_list_file, '[[', ordonnee6)))
+dim(df_result)
 
 ```
  
@@ -116,11 +99,11 @@ we plot 6 in one for each year
 ```{r }
 
 p1 <- ggplot(df_result) + 
-  geom_point(aes(x=x1, y=y1), show.legend = FALSE) + #, color=factor(df_result$polyid)
+  geom_point(aes(x=x1, y=y1), show.legend = FALSE) + #, color=df_result$polyid
   labs(title = paste0(abscisse1," vs ", ordonnee1, " year ", year_select), x=abscisse1, y= ordonnee1)+ 
   theme_bw()+
-  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 12, vjust = 1.5, hjust=1),
-        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 12, angle = 0, vjust=1.05),
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 10, vjust = 1.5, hjust=1),
+        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 10, angle = 0, vjust=1.05),
         plot.title = element_text(size = 10, face = "bold", hjust=0.5))+
   scale_x_continuous(breaks=seq(0,1,by=0.2),limits=c(0,1))+
   scale_y_continuous(breaks=seq(0,1,by=0.2),limits=c(0,1))+
@@ -129,8 +112,8 @@ p2 <- ggplot(df_result) +
   geom_point(aes(x=x2, y=y2), show.legend = FALSE) + 
   labs(title = paste0(abscisse2," vs ", ordonnee2, " year ", year_select), x=abscisse2, y= ordonnee2)+ 
   theme_bw()+
-  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 12, vjust = 1.5, hjust=1),
-        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 12, angle = 0, vjust=1.05),
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 10, vjust = 1.5, hjust=1),
+        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 10, angle = 0, vjust=1.05),
         plot.title = element_text(size = 10, face = "bold", hjust=0.5))+
   scale_x_continuous(breaks=seq(0,1,by=0.2),limits=c(0,1))+
   scale_y_continuous(breaks=seq(0,1,by=0.2),limits=c(0,1))+
@@ -139,8 +122,8 @@ p3 <- ggplot(df_result) +
   geom_point(aes(x=x3, y=y3), show.legend = FALSE) + 
   labs(title = paste0(abscisse3," vs ", ordonnee3, " year ", year_select), x=abscisse3, y= ordonnee3)+ 
   theme_bw()+
-  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 12, vjust = 1.5, hjust=1),
-        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 12, angle = 0, vjust=1.05),
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 10, vjust = 1.5, hjust=1),
+        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 10, angle = 0, vjust=1.05),
         plot.title = element_text(size = 10, face = "bold", hjust=0.5))+
   scale_x_continuous(breaks=seq(0,1,by=0.2),limits=c(0,1))+
   scale_y_continuous(breaks=seq(0,1,by=0.2),limits=c(0,1))+
@@ -149,8 +132,8 @@ p4 <- ggplot(df_result) +
   geom_point(aes(x=x4, y=y4), show.legend = FALSE) + 
   labs(title = paste0(abscisse4," vs ", ordonnee4, " year ", year_select), x=abscisse4, y= ordonnee4)+ 
   theme_bw()+
-  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 12, vjust = 1.5, hjust=1),
-        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 12, angle = 0, vjust=1.05),
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 10, vjust = 1.5, hjust=1),
+        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 10, angle = 0, vjust=1.05),
         plot.title = element_text(size = 10, face = "bold", hjust=0.5))+
   scale_x_continuous(breaks=seq(0,1,by=0.2),limits=c(0,1))+
   scale_y_continuous(breaks=seq(0,1,by=0.2),limits=c(0,1))+
@@ -159,8 +142,8 @@ p5 <- ggplot(df_result) +
   geom_point(aes(x=x5, y=y5), show.legend = FALSE) + 
   labs(title = paste0(abscisse5," vs ", ordonnee5, " year ", year_select), x=abscisse5, y= ordonnee5)+ 
   theme_bw()+
-  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 12, vjust = 1.5, hjust=1),
-        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 12, angle = 0, vjust=1.05),
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 10, vjust = 1.5, hjust=1),
+        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 10, angle = 0, vjust=1.05),
         plot.title = element_text(size = 10, face = "bold", hjust=0.5))+
   scale_x_continuous(breaks=seq(0,1,by=0.2),limits=c(0,1))+
   scale_y_continuous(breaks=seq(0,1,by=0.2),limits=c(0,1))+
@@ -169,8 +152,8 @@ p6 <- ggplot(df_result) +
   geom_point(aes(x=x6, y=y6), show.legend = FALSE) + 
   labs(title = paste0(abscisse6," vs ", ordonnee6, " year ", year_select), x=abscisse6, y= ordonnee6)+ 
   theme_bw()+
-  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 12, vjust = 1.5, hjust=1),
-        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 12, angle = 0, vjust=1.05),
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 10, vjust = 1.5, hjust=1),
+        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 10, angle = 0, vjust=1.05),
         plot.title = element_text(size = 10, face = "bold", hjust=0.5))+
   scale_x_continuous(breaks=seq(0,1,by=0.2),limits=c(0,1))+
   scale_y_continuous(breaks=seq(0,1,by=0.2),limits=c(0,1))+
@@ -189,41 +172,12 @@ print(p4)
 print(p5)
 print(p6)
 
-pdf(file=file.path(dir_plot, "yearly", paste0(year_select,".pdf")), width = 10, height = 7)
+pdf(file=file.path(dir_plot, "yearly", paste0(year_select,".pdf")), width = 12, height = 7)
 p1 + p2 + p3 + p4 + p5 + p6
 dev.off()
 
 
 ```
-
-## MULTI YEAR PLOT
-
-We plot one feature's evolution
-
-```{r }
-
-
-                                  ############################# GLOBAL PARAMETERS  ###############################
-time_span <- c(2000:2017)
-time_span[c(seq(1,18,3),18)]
-load(file = file.path(dir_data, "vulnerability", "1000randomid.RData")) # basin_id
-
-                                  ############################# SPECIFIC PARAMETERS  ###############################
-
-feature <- "past_ma"
-
-
-                                  ############################# FUNCTION  ###############################
-
-sf_list_name <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(year_select,".+.shp"), full.names = TRUE)
-sf_list_files <- lapply(sf_list_name, st_read)
-
-
-
-
-
-```
-
 
 
 

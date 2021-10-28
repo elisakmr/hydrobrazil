@@ -67,10 +67,10 @@ ordonnee6 <- "soy"
 
 merging data into one table
 
-```{r }
+```{r, results = FALSE}
 
 #
-sf_list_name <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(year_select,".+.shp"), full.names = TRUE)
+sf_list_name <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(year_select,"_vulnerability",".+.shp"), full.names = TRUE)
 
 sf_list_file <- lapply(sf_list_name, st_read)
 #
@@ -172,7 +172,7 @@ print(p4)
 print(p5)
 print(p6)
 
-pdf(file=file.path(dir_plot, "yearly", paste0(year_select,".pdf")), width = 12, height = 7)
+pdf(file=file.path(dir_plot, paste0(year_select,".pdf")), width = 12, height = 7)
 p1 + p2 + p3 + p4 + p5 + p6
 dev.off()
 

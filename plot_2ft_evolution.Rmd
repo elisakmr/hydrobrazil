@@ -1,0 +1,142 @@
+---
+title: "Plotting 2 feature evolution"
+output: html_document
+---
+
+## Directories
+
+```{r }
+
+if ((Sys.info()["nodename"]) == "COP026") {
+  dir_data <- "C:/Users/arvor_d/Documents/workwork/data"
+  dir_plot <- "C:/Users/arvor_d/Documents/workwork/plot"
+} else if ((Sys.info()["nodename"]) == "COSTELSV6") {
+  dir_data <- "F:/kamir_e/$data"
+  dir_plot <- "F:/kamir_e/$plots"
+}
+
+```
+
+## Library
+
+```{r, results = FALSE}
+
+library(plyr)
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(ggmap)
+library(sf)
+library(viridis)
+library(patchwork)
+library(wesanderson)
+
+```
+
+## PARAMETERS 
+
+```{r }
+
+# time frame 
+time_span <- c(2000:2017)
+years <- time_span[c(seq(1,18,3),18)]
+
+# features to work on
+feature1 <- "past_ma"
+
+feature2 <- "for_up"
+
+
+```
+
+## PREPARING DATA
+
+merging data into one table
+
+```{r, echo=FALSE,results='hide', message=FALSE}
+
+
+df <- list()
+
+for (y in years){
+  sf_list_name <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(y,"_vulnerability",".+.shp"), full.names = TRUE)
+  sf_list_file <- lapply(sf_list_name, st_read)
+  
+  df[[which(y==years)]] <- data.frame(polyid= unlist(lapply(sf_list_file, '[[', "HYBAS_ID")),
+                        feature1= unlist(lapply(sf_list_file, '[[', feature1)),
+                        feature2= unlist(lapply(sf_list_file, '[[', feature2)),
+                        annee=y)
+  
+}
+
+  # df for plot1
+df_f <- do.call("rbind",df)
+
+  #df for plot2
+df_dif <- matrix()
+df_dif$feature1 <- df[[6]]$feature1-df[[1]]$feature1
+df_dif$feature2 <- df[[6]]$feature2-df[[1]]$feature2
+df_dif$polyid <- df[[6]]$polyid
+  
+df_diff <- as.data.frame(df_dif)[,-1]
+ 
+```
+ 
+### PLOTTING 
+ 
+  #1# Plotting ft1 vs ft2, one point per poly and per year
+  
+  #2# Plotting ft1 evolution vs ft2 evolution (2017-2000), on point per poly
+
+```{r }
+
+                                                      #1# FEATURE 1 VS FEATURE 2
+
+p1 <- ggplot(df_f) + #%>% filter(annee==2006)
+  geom_point(aes(x=feature1, y=feature2, color=factor(annee)), show.legend = TRUE) +
+  labs(title = paste0(feature2, " vs ", feature1), x=feature1, y=feature2)+ 
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 10, vjust = 1.5, hjust=1),
+        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 10, angle = 0, vjust=1.05),
+        plot.title = element_text(size = 10, face = "bold", hjust=0.5))+
+  scale_color_brewer(palette="Set3")
+
+
+pdf(file=file.path(dir_plot, paste0(feature2, "_vs_", feature1, ".pdf")))
+p1
+dev.off()
+
+
+ ggplot(df_f %>% group_by(polyid)) + #
+  geom_point(aes(x=feature1, y=feature2, color=factor(annee)), show.legend = TRUE) +
+  labs(title = paste0(feature2, " vs ", feature1), x=feature1, y=feature2)+ 
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 10, vjust = 1.5, hjust=1),
+        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 10, angle = 0, vjust=1.05),
+        plot.title = element_text(size = 10, face = "bold", hjust=0.5))+
+  scale_color_brewer(palette="Set3")
+
+
+ 
+                                                       #1# FEATURE 1 EV VS FEATURE 2 EV
+ 
+p2 <- ggplot(df_diff %>% filter(feature1!=0, feature2!=0)) + #
+  geom_point(aes(x=feature1, y=feature2), show.legend = TRUE) +
+  labs(title = paste0(feature2, " vs ", feature1), x=feature1, y=feature2)+ 
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 10, vjust = 1.5, hjust=1),
+        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 10, angle = 0, vjust=1.05),
+        plot.title = element_text(size = 10, face = "bold", hjust=0.5))+
+  scale_color_brewer(palette="Set3")
+
+
+pdf(file=file.path(dir_plot, paste0(feature2, "_vs_", feature1, "_dynamic.pdf")))
+p2
+dev.off()
+
+```
+
+
+
+

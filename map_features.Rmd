@@ -1,5 +1,5 @@
 ---
-title: "mapping hydrobasin selection"
+title: "Mapping vulnerability features"
 output: html_document
 ---
 
@@ -33,7 +33,7 @@ library(patchwork)
 
 ```
 
-## PARAMETERS 
+## PARAMETERS
 
 Create a shapefile of randomly selected hydrobasin 
 On which vulnerability has been computed
@@ -41,10 +41,42 @@ On which vulnerability has been computed
 ```{r }
 
 hydrobasin <- st_read(file.path(dir_data, "hydroshed","hydrobasins_level9", "hydrobasin_mg_lev9.shp"))
-load(file = file.path(dir_plot, "1000randomid.RData"))
+load(file = file.path(dir_data, "vulnerability", "1000randomid.RData"))
+y <- 2017
 
-hydrobasin_1000 <- hydrobasin %>% filter(HYBAS_ID %in% basin_id)          
-           
-st_write(hydrobasin_1000, file.path(dir_plot,paste0("hydrobasin1000.shp")), delete_layer = TRUE)
 
 ```
+
+## PLOTTING FEATURES 
+
+Create a shapefile of randomly selected hydrobasin 
+On which vulnerability has been computed
+
+```{r }
+
+install.packages("rnaturalearth")
+install.packages("rnaturalearthdata")
+library(rnaturalearth)
+library(rnaturalearthdata)
+
+
+sf_y <- st_read(file.path(dir_data, "vulnerability", "yearly", paste0(y, "_whole_vulnerability.shp")))
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+ggmap(data=world)+
+  geom_polygon(sf_y)
+  
+  
+  
+  
+```
+
+
+
+
+
+
+
+
+

@@ -23,3 +23,9 @@
 # updateR()
 
 # df in loop: df <- do.call("rbind",mylist)
+
+# generating random selection of 100 hydrobasins
+
+#random_basin <- sample(1:3389, 1000, replace=F) ################## TO BE SAVED!!!!
+# basin_id <- hydrobasin[random_basin,]$HYBAS_ID
+# save(basin_id, file = file.path(dir_data, "vulnerability", "1000randomid.RData"))

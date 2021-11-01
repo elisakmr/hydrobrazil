@@ -146,4 +146,19 @@ plot(basin$geometry, add=TRUE)
 
 st_write(buf_stream, file.path(dir_data, "vulnerability", "buf6090448700.shp"), delete_layer = TRUE)
 
-hybas_id=6090453090
+  # id missing polygon on the run
+sf_list_name <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(2015,".+.shp"), full.names = TRUE)
+name_noyear <- gsub("/2015_"," ",sf_list_name)
+matches <- regmatches(name_noyear, gregexpr("[[:digit:]]+", name_noyear))
+id_ok <- as.numeric(unlist(matches))
+
+vecttrue<-vector()
+for (i in 757:3389){
+  vecttrue[i]<-which(hydrobasin$HYBAS_ID[i]%in%id_ok)
+}
+
+#567 #602 #639 #663 #685 #696 #756
+
+
+
+

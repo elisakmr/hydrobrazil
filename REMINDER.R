@@ -17,15 +17,22 @@
 
 # %>% rename(value=year_index)
 
-# sf_list_name <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(year_select,".+.shp"), full.names = TRUE)
+sf_list_name <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(year_select,".+.shp"), full.names = TRUE)
 
-# R.Version()$version.string
-# updateR()
+R.Version()$version.string
+updateR()
 
-# df in loop: df <- do.call("rbind",mylist)
+df in loop: df <- do.call("rbind",mylist)
 
 # generating random selection of 100 hydrobasins
 
-#random_basin <- sample(1:3389, 1000, replace=F) ################## TO BE SAVED!!!!
-# basin_id <- hydrobasin[random_basin,]$HYBAS_ID
-# save(basin_id, file = file.path(dir_data, "vulnerability", "1000randomid.RData"))
+random_basin <- sample(1:3389, 1000, replace=F) ################## TO BE SAVED!!!!
+basin_id <- hydrobasin[random_basin,]$HYBAS_ID
+save(basin_id, file = file.path(dir_data, "vulnerability", "1000randomid.RData"))
+
+# id missing polygon on the run
+sf_list_name <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(2015,".+.shp"), full.names = TRUE)
+name_noyear <- gsub("/2015_"," ",sf_list_name)
+matches <- regmatches(name_noyear, gregexpr("[[:digit:]]+", name_noyear))
+as.numeric(unlist(matches))
+

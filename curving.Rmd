@@ -11,7 +11,7 @@ output: html_document
 if ((Sys.info()["nodename"]) == "COP026") {
   dir_data <- "C:/Users/arvor_d/Documents/workwork/data"
   dir_plot <- "C:/Users/arvor_d/Documents/workwork/plot"
-} else if ((Sys.info()["nodename"]) == "MULLET-SL") {
+} else if ((Sys.info()["nodename"]) == "COSTELSV6") {
   dir_data <- "F:/kamir_e/$data"
   dir_plot <- "F:/kamir_e/$plot "
 }

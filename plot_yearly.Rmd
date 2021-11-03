@@ -39,7 +39,7 @@ library(patchwork)
 
 # time frame 
 years <- c(2003, 2006, 2009, 2012, 2015, 2017)
-year_select <- years[6]
+year_select <- years[3]
 
 # features to work on
 abscisse1 <- "soy"
@@ -58,7 +58,7 @@ abscisse5 <- "sy_fllw"
 ordonnee5 <- "sy_crn"
 
 abscisse6 <- "for_up"
-ordonnee6 <- "soy"
+ordonnee6 <- "past_ma"
 
 
 ```
@@ -165,14 +165,14 @@ p6 <- ggplot(df_result) +
 # 
 # par(mfrow=c(2,3))
 
-print(p1)
-print(p2)
-print(p3)
-print(p4)
-print(p5)
-print(p6)
+# print(p1)
+# print(p2)
+# print(p3)
+# print(p4)
+# print(p5)
+# print(p6)
 
-pdf(file=file.path(dir_plot, paste0(year_select,".pdf")), width = 12, height = 7)
+pdf(file=file.path(dir_plot, paste0(year_select,"_allpoly.pdf")))
 p1 + p2 + p3 + p4 + p5 + p6
 dev.off()
 

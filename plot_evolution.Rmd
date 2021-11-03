@@ -100,7 +100,7 @@ Forest dominant: >10%?
 p1 <- ggplot(df_f %>% filter(feature1>seuil1)) + 
   geom_boxplot(aes(x=factor(annee),y=feature1, group=annee, fill=factor(annee)), show.legend = FALSE, alpha=0.2) +
   scale_y_continuous(limits = quantile((df_f %>% filter(feature1>seuil1))$feature1, c(0.2, 0.8)))+
-  labs(title = paste0(feature1, " % per hydrobasin (filtered above ", seuil, ")"), x="year", y="")+ 
+  labs(title = paste0(feature1, " % per hydrobasin (filtered above ", seuil1, ")"), x="year", y="")+ 
   theme_bw()+
   theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 10, vjust = 1.5, hjust=1),
         axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 10, angle = 0, vjust=1.05),
@@ -108,7 +108,7 @@ p1 <- ggplot(df_f %>% filter(feature1>seuil1)) +
 p2 <- ggplot(df_f %>% filter(feature2>seuil2)) + 
   geom_boxplot(aes(x=factor(annee),y=feature2, group=annee, fill=factor(annee)), show.legend = FALSE, alpha=0.2) +
   scale_y_continuous(limits = quantile((df_f %>% filter(feature2>seuil2))$feature2, c(0.2, 0.8)))+
-  labs(title = paste0(feature2, " % per hydrobasin (filtered above ", seuil, ")"), x="year", y= "")+ 
+  labs(title = paste0(feature2, " % per hydrobasin (filtered above ", seuil2, ")"), x="year", y= "")+ 
   theme_bw()+
   theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 10, vjust = 1.5, hjust=1),
         axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 10, angle = 0, vjust=1.05),
@@ -131,7 +131,7 @@ p4 <- ggplot(df_f %>% filter(feature4>seuil4)) +
         plot.title = element_text(size = 10, face = "bold", hjust=0.5))
 
 
-pdf(file=file.path(dir_plot, "evolution.pdf"), width = 7, height = 7)
+pdf(file=file.path(dir_plot, "evolution_pastfor.pdf"))
 p1 + p2 + p3 + p4 
 dev.off()
 

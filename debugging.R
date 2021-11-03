@@ -153,10 +153,13 @@ matches <- regmatches(name_noyear, gregexpr("[[:digit:]]+", name_noyear))
 id_ok <- as.numeric(unlist(matches))
 
 vecttrue<-vector()
-for (i in 757:3389){
-  vecttrue[i]<-which(hydrobasin$HYBAS_ID[i]%in%id_ok)
+for (i in 1:3389){
+  if(hydrobasin$HYBAS_ID[i]%in%id_ok==FALSE){
+    vecttrue[i]<- TRUE
+  } else {vecttrue[i]<- FALSE}
 }
 
+poly_pasok <- which(vecttrue)
 #567 #602 #639 #663 #685 #696 #756
 
 

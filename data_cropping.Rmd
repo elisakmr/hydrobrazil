@@ -15,6 +15,7 @@ if ((Sys.info()["nodename"]) == "COP026") {
   dir_data <- "F:/kamir_e/$data"
   dir_plot <- "F:/kamir_e/$plot "
 }
+jkhkjjkj
 
 ```
 

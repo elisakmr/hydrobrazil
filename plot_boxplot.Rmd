@@ -1,0 +1,153 @@
+---
+title: "Plot feature evolution"
+output: html_document
+---
+
+## Directories
+
+```{r }
+
+if ((Sys.info()["nodename"]) == "COP026") {
+  dir_data <- "C:/Users/arvor_d/Documents/workwork/data"
+  dir_plot <- "C:/Users/arvor_d/Documents/workwork/plot"
+} else if ((Sys.info()["nodename"]) == "COSTELSV6") {
+  dir_data <- "F:/kamir_e/$data"
+  dir_plot <- "F:/kamir_e/$plots"
+}
+
+```
+
+## Library
+
+```{r, results = FALSE}
+
+library(plyr)
+library(tidyverse)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(ggmap)
+library(sf)
+library(viridis)
+library(patchwork)
+library(wesanderson)
+
+```
+
+## PARAMETERS 
+
+```{r }
+
+# time frame 
+time_span <- c(1985:2019)
+years <- time_span[seq(1,35,3)]
+
+
+# features to work on
+feature1 <- "soy"
+seuil1 <- 0.05
+
+feature2 <- "for_up"
+seuil2 <- 0.005
+
+feature3 <- "sug_ma"
+seuil3 <- 0.05
+
+feature4 <- "agrpast"
+seuil4 <- 0.05
+
+name_ft <- c(feature1, feature2, feature3, feature4)
+i<-1
+
+```
+
+## PREPARING DATA
+
+merging data into one table
+
+```{r, echo=FALSE,results='hide', message=FALSE}
+
+
+df <- list()
+
+for (y in years){
+  sf_list_name <- list.files(path=file.path(dir_data, "vulnerability"), pattern = paste0(y,"_vulnerability",".+.shp"), full.names = TRUE)
+  sf_list_file <- lapply(sf_list_name, st_read)
+  
+  df[[which(y==years)]] <- data.frame(polyid= unlist(lapply(sf_list_file, '[[', "HYBAS_ID")),
+                        feature1= unlist(lapply(sf_list_file, '[[', feature1)),
+                        feature2= unlist(lapply(sf_list_file, '[[', feature2)),
+                        feature3= unlist(lapply(sf_list_file, '[[', feature3)),
+                        feature4= unlist(lapply(sf_list_file, '[[', feature4)),
+                        annee=y)
+  
+}
+
+df_f <- do.call("rbind",df)
+#
+
+dim(df_f)
+
+#df_f %>% filter(annee==years[5]) %>% dim()
+
+```
+ 
+### PLOTTING 
+ 
+we plot 2 boxplots per year on a 6 box grid
+Soy dominant: >5%
+Forest dominant: >10%?
+ 
+```{r }
+
+
+p[[1]] <- ggplot(df_f %>% filter(feature1>seuil1)) + 
+  geom_boxplot(aes(x=factor(annee),y=feature1, group=annee, fill=factor(annee)), show.legend = FALSE, alpha=0.2) +
+  scale_y_continuous(limits = quantile((df_f %>% filter(feature1>seuil1))$feature1, c(0.2, 0.8)))+
+  labs(title = paste0(feature1, " % per hydrobasin (filtered above ", seuil1, ")"), x="year", y="")+ 
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 10, vjust = 1.5, hjust=1),
+        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 10, angle = 0, vjust=1.05),
+        plot.title = element_text(size = 10, face = "bold", hjust=0.5))
+
+p[[2]] <- ggplot(df_f %>% filter(feature2>seuil2)) + 
+  geom_boxplot(aes(x=factor(annee),y=feature2, group=annee, fill=factor(annee)), show.legend = FALSE, alpha=0.2) +
+  scale_y_continuous(limits = quantile((df_f %>% filter(feature2>seuil2))$feature2, c(0.2, 0.8)))+
+  labs(title = paste0(feature2, " % per hydrobasin (filtered above ", seuil2, ")"), x="year", y= "")+ 
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 10, vjust = 1.5, hjust=1),
+        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 10, angle = 0, vjust=1.05),
+        plot.title = element_text(size = 10, face = "bold", hjust=0.5))
+
+p[[3]] <- ggplot(df_f %>% filter(feature3>seuil3)) + 
+  geom_boxplot(aes(x=factor(annee),y=feature3, group=annee, fill=factor(annee)), show.legend = FALSE, alpha=0.2) +
+  #scale_y_continuous(limits = quantile((df_f %>% filter(feature3>seuil3))$feature3, c(0.2, 0.8)))+
+  labs(title = paste0(feature3, " % per hydrobasin (filtered above ", seuil, ")"), x="year", y= "")+ 
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 10, vjust = 1.5, hjust=1),
+        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 10, angle = 0, vjust=1.05),
+        plot.title = element_text(size = 10, face = "bold", hjust=0.5))
+
+p[[4]] <- ggplot(df_f %>% filter(feature4>seuil4)) + 
+  geom_boxplot(aes(x=factor(annee),y=feature4, group=annee, fill=factor(annee)), outlier.shape = NA, show.legend = FALSE, alpha=0.2) +
+  scale_y_continuous(limits = quantile((df_f %>% filter(feature4>seuil4))$feature4, c(0.2, 0.8)))+
+  labs(title = paste0(feature4, " % per hydrobasin (filtered above ", seuil, ")"), x="year", y= "")+ 
+  theme_bw()+
+  theme(axis.text.x = element_text(size = 12), axis.title.x = element_text(size = 10, vjust = 1.5, hjust=1),
+        axis.text.y = element_text(size = 12), axis.title.y = element_text(size = 10, angle = 0, vjust=1.05),
+        plot.title = element_text(size = 10, face = "bold", hjust=0.5))
+
+
+plot(p[[i]])
+ggsave(file.path(dir_plot, paste0(name_ft[i],"_evolution.pdf")), dpi = 300)
+
+
+```
+
+
+
+
+
+
+
+
